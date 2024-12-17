@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ModeToggle } from "./mode-toggle"
 import { Button } from "./ui/button"
 import { Menu, Settings, LogOut, LayoutDashboard, User, CreditCard } from 'lucide-react'
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
@@ -141,6 +141,9 @@ export default function Header() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+            <SheetHeader>
+              <SheetDescription>LogoAIPro</SheetDescription>
+            </SheetHeader>
             <SheetTitle>Menu</SheetTitle>
             <nav className="flex flex-col space-y-4 mt-4">
               <NavItems />

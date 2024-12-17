@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge"
 import { useRouter } from 'next/navigation'
 import { useGenerations } from '@/hooks/useGenerations'
 import { useAuth } from '@/hooks/useAuth'
-import { redirect } from 'next/navigation'
 
 interface ModelResponse {
   image: string;
@@ -37,7 +36,7 @@ export default function LogoGenerator() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session) {
-      redirect(`/login?returnTo=${encodeURIComponent(window.location.href)}&prompt=${encodeURIComponent(prompt)}`);
+      router.push(`/login?returnTo=${encodeURIComponent(window.location.href)}&prompt=${encodeURIComponent(prompt)}`);
     }
 
     if (!generationsLoading && (generationsRemaining ?? 0) <= 0) {
@@ -83,15 +82,22 @@ export default function LogoGenerator() {
     // TODO: Implement purchase logic
     alert("Redirecting to purchase page...")
   }
-  
+
   const editImage = (generatedLogo: string) => {
-    redirect(`/logo-editor?imageUrl=${encodeURIComponent(generatedLogo)}`);
+    router.push(`/logo-editor?imageUrl=${encodeURIComponent(generatedLogo)}`);
   }
 
   const downloadImage = async (url: string) => {
     try {
-      // Fetch the image data
-      const response = await fetch(url);
+      // Fetch the image data using a proxy route on your own server
+      const response = await fetch(`/api/download-image?url=${encodeURIComponent(url)}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download image');
+      }
+
       const blob = await response.blob();
 
       // Create a link element and trigger download
@@ -140,7 +146,11 @@ export default function LogoGenerator() {
                   className="w-full resize-none"
                 />
                 <div className="flex justify-between items-center">
-                  <Button type="submit" size="lg" disabled={session !== null && (isLoading || (generationsRemaining ?? 0) <= 0)} className="w-full">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={session !== null && (isLoading || (generationsRemaining ?? 0) <= 0)}
+                    className="w-full font-semibold">
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -197,18 +207,10 @@ export default function LogoGenerator() {
                   </div>
                   <div className="flex flex-row w-full items-center justify-center p-4 bg-background/70 backdrop-blur-sm">
                     <Button
-                      onClick={() => editImage(generatedLogo)} // Assuming you have an editImage function
-                      className="mr-2" // Add margin to the right for spacing
-                      size="lg"
-                      variant="outline"
-                    >
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit Logo
-                    </Button>
-                    <Button
                       onClick={() => downloadImage(generatedLogo)}
                       size="lg"
                       variant="default"
+                      className="font-semibold"
                     >
                       <Download className="mr-2 h-4 w-4" />
                       Download

@@ -7,7 +7,7 @@ import { LayoutDashboard, Image, CreditCard, User, Home, LogOut, Menu } from "lu
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger, SheetHeader, SheetDescription } from "@/components/ui/sheet"
 import { ModeToggle } from "../mode-toggle"
 
 const links = [
@@ -87,6 +87,9 @@ export function Sidebar() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 bg-gray-800 p-0">
+          <SheetHeader>
+            <SheetDescription>LogoAIPro</SheetDescription>
+          </SheetHeader>
           <SheetTitle>Menu</SheetTitle>
           <nav className="flex h-full flex-col text-white">
             <SidebarContent />
