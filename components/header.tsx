@@ -3,17 +3,18 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from "next/link"
 import { ModeToggle } from "./mode-toggle"
-import { Button } from "./ui/button"
-import { Menu, Settings, LogOut, LayoutDashboard, User, CreditCard } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Menu, LogOut, LayoutDashboard, User, CreditCard } from 'lucide-react'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
-import { Skeleton } from './ui/skeleton'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
   const dropdownRef = useRef<HTMLDivElement | null>(null)
   const { session, signOut, loading } = useAuth()
 
@@ -22,6 +23,14 @@ export default function Header() {
       setIsDropdownOpen(false)
     }
   }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     if (isDropdownOpen) {
@@ -36,94 +45,110 @@ export default function Header() {
 
   const NavItems = () => (
     <>
-      <Link href="/logo-generator" className="text-sm font-medium hover:text-primary transition-colors">
-        AI Logo Generator
+      <Link href="/logo-generator" className="group relative">
+        <span className="text-sm font-medium transition-colors hover:text-primary">
+          AI Logo Generator
+        </span>
+        <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary scale-x-0 transition-transform group-hover:scale-x-100" />
       </Link>
-      <Link href="/logo-editor" className="text-sm font-medium hover:text-primary transition-colors">
-        Logo Editor
+      <Link href="/logo-editor" className="group relative">
+        <span className="text-sm font-medium transition-colors hover:text-primary">
+          Logo Editor
+        </span>
+        <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary scale-x-0 transition-transform group-hover:scale-x-100" />
       </Link>
-      <Link href="/pricing" className="text-sm font-medium hover:text-primary transition-colors">
-        Pricing
+      <Link href="/pricing" className="group relative">
+        <span className="text-sm font-medium transition-colors hover:text-primary">
+          Pricing
+        </span>
+        <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary scale-x-0 transition-transform group-hover:scale-x-100" />
       </Link>
-      <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">
-        About
+      <Link href="/about" className="group relative">
+        <span className="text-sm font-medium transition-colors hover:text-primary">
+          About
+        </span>
+        <span className="absolute inset-x-0 -bottom-1 h-0.5 bg-primary scale-x-0 transition-transform group-hover:scale-x-100" />
       </Link>
     </>
   )
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-200 ${
+        isScrolled ? 'shadow-md' : ''
+      }`}
+    >
       <div className="container flex h-16 items-center">
-        <Image src="/logo.png" alt="Logo" width={36} height={36} className="mr-2" />
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="font-bold text-2xl">LogoAIPro</span>
-        </Link>
-        <nav className="hidden md:flex items-center space-x-6 mx-auto">
+        <div className="flex items-center space-x-2">
+          <Image src="/logo.png" alt="Logo" width={36} height={36} className="mr-2" />
+          <Link href="/" className="flex items-center">
+            <span className="font-bold text-2xl">
+              LogoAIPro
+            </span>
+          </Link>
+        </div>
+
+        <nav className="hidden md:flex items-center space-x-8 mx-auto">
           <NavItems />
         </nav>
+
         <div className="hidden md:flex items-center space-x-4 ml-auto relative">
-          {loading && (
-            <Avatar onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="cursor-pointer">
-              <AvatarImage src={'/'} />
-              <AvatarFallback>
-                <Skeleton className="w-8 h-8 rounded-full" />
-              </AvatarFallback>
-            </Avatar>
-          )}
-          {!loading && (session ? (
-            <>
-              <div ref={dropdownRef} className="bg-white text-black dark:bg-transparent dark:text-white">
-                <Avatar onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="cursor-pointer">
-                  <AvatarImage src={'/'} />
-                  <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 border rounded-xl shadow-md bg-white text-black dark:bg-gray-700 dark:text-white">  
-                    <Link href="/dashboard" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
-                        <LayoutDashboard className="w-4 h-4 mr-2 inline-block" />
+          {loading ? (
+            <Skeleton className="w-10 h-10 rounded-full" />
+          ) : session ? (
+            <div ref={dropdownRef} className="relative">
+              <Avatar 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
+                className="cursor-pointer ring-2 ring-primary ring-offset-2 ring-offset-background transition-all hover:ring-4"
+              >
+                <AvatarImage src={'/'} />
+                <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              
+              {isDropdownOpen && (
+                <div  className="absolute right-0 mt-2 w-56 rounded-xl border bg-card text-card-foreground shadow-lg">
+                  <div className="p-2 space-y-1">
+                    <Link href="/dashboard">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
                         Dashboard
                       </Button>
                     </Link>
-                    <Link href="/dashboard/profile" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
-                        <User className="w-4 h-4 mr-2 inline-block" />
+                    <Link href="/dashboard/profile">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <User className="w-4 h-4 mr-2" />
                         Profile
                       </Button>
                     </Link>
-                    <Link href="/dashboard/billing" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
-                        <CreditCard className="w-4 h-4 mr-2 inline-block" />
+                    <Link href="/dashboard/billing">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <CreditCard className="w-4 h-4 mr-2" />
                         Billing
                       </Button>
                     </Link>
-                    <div className="h-0.5 w-full px-4">
-                      <div className="border-b border-gray-200"></div>
-                    </div>
-                    <div className="block px-4 py-2">
-                      <Button variant="ghost" onClick={signOut} className="justify-start w-full text-left text-black dark:text-white">  
-                        <LogOut className="w-4 h-4 mr-2 inline-block" />
-                        Sign Out
-                      </Button>
-                    </div>
                   </div>
-                )}
-              </div>
-            </>
+                  <div className="border-t p-2">
+                    <Button variant="ghost" onClick={signOut} className="w-full justify-start text-destructive hover:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
-            <>
+            <div className="flex items-center space-x-2">
               <Button variant="ghost" asChild>
                 <Link href="/login">Login</Link>
               </Button>
-              <Button asChild>
+              <Button asChild className="bg-primary hover:bg-primary/90">
                 <Link href="/sign-up">Sign Up</Link>
               </Button>
-            </>
-          ))}
+            </div>
+          )}
           <ModeToggle />
         </div>
 
-        {/* Mobile navbar */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild className="md:hidden ml-auto">
             <Button variant="ghost" size="icon">
@@ -131,46 +156,69 @@ export default function Header() {
               <span className="sr-only">Toggle menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+          <SheetContent side="right" className="w-full sm:w-96">
             <SheetHeader>
-              <SheetDescription>LogoAIPro</SheetDescription>
+              <SheetTitle className="text-left">Menu</SheetTitle>
+              <SheetDescription className="text-left">
+                Welcome to LogoAIPro
+              </SheetDescription>
             </SheetHeader>
-            <SheetTitle>Menu</SheetTitle>
-            <nav className="flex flex-col space-y-4 mt-4">
+            <nav className="flex flex-col space-y-4 mt-8">
               <NavItems />
-              {loading && <Skeleton className="w-8 h-8" />}
-              {!loading && (session ? (
-                <>
-                  <div className="flex items-center space-x-4">
+              {loading ? (
+                <Skeleton className="w-8 h-8" />
+              ) : session ? (
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4 p-4 rounded-lg bg-accent">
                     <Avatar>
                       <AvatarImage src={'/'} />
                       <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <span>{session.user.email}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{session.user.email}</span>
+                      <span className="text-sm text-muted-foreground">Manage your account</span>
+                    </div>
                   </div>
 
-                  <Link href="/dashboard" className="block w-full">
-                    <Button variant="ghost" className="justify-start w-full text-left">
-                      <Settings className="w-4 h-4 mr-2 inline-block" />
-                      Dashboard
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" onClick={signOut} className="justify-start w-full text-left">
-                    <LogOut className="w-4 h-4 mr-2 inline-block" />
+                  <div className="space-y-1">
+                    <Link href="/dashboard">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <LayoutDashboard className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/profile">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/billing">
+                      <Button variant="ghost" className="w-full justify-start">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Billing
+                      </Button>
+                    </Link>
+                  </div>
+
+                  <Button variant="ghost" onClick={signOut} className="w-full justify-start text-destructive hover:text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
-                  <Button variant="ghost" asChild className="justify-start">
-                    <Link href="/login">Login</Link>
-                  </Button>
-                  <Button asChild className="justify-start">
+                <div className="space-y-2">
+                  <Button asChild variant="default" className="w-full">
                     <Link href="/sign-up">Sign Up</Link>
                   </Button>
-                </>
-              ))}
-              <ModeToggle />
+                  <Button asChild variant="ghost" className="w-full">
+                    <Link href="/login">Login</Link>
+                  </Button>
+                </div>
+              )}
+              <div className="pt-4">
+                <ModeToggle />
+              </div>
             </nav>
           </SheetContent>
         </Sheet>

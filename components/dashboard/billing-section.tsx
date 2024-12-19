@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTransactions } from "@/hooks/useTransactions"
+import { TransactionHistory } from "./transaction-history"
 
 const plans = [
   { name: "Basic", price: "$9.99", generations: 100 },
@@ -58,45 +59,7 @@ export function BillingSection() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Billing History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transaction Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-              <TableRow>
-                <TableRow>
-                  <TableCell colSpan={3}>
-                    <Skeleton className="h-6 w-full" />
-                    <Skeleton className="h-6 w-full mt-2" />
-                    <Skeleton className="h-6 w-full mt-2" />
-                  </TableCell>
-                </TableRow>
-              </TableRow>
-            ) :
-              transactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>{transaction.transaction_type}</TableCell>
-                  <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    {new Date(transaction.transaction_timestamp).toLocaleDateString()}
-                  </TableCell>
-                </TableRow>
-              ))
-            }
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <TransactionHistory />
     </div>
   )
 }

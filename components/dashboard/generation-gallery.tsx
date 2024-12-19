@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect, useMemo } from "react";
 import { useGeneratedLogos } from "@/hooks/useGenerations";
 import {
@@ -22,10 +23,13 @@ import {
 import { useCheckout } from "@/hooks/usePayment";
 import { useDownload } from "@/hooks/useDownload";
 import { usePrice } from "@/hooks/usePrice";
-import { Download, FilePenLine, Pencil } from "lucide-react";
+import { Download, Pencil, Clock, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function GenerationGallery() {
-  // Pagination and sorting states
+  // States and hooks (unchanged)
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'purchased' | 'not-purchased'>('newest');
   const itemsPerPage = 12;
@@ -34,26 +38,17 @@ export function GenerationGallery() {
   const [checkingOutImages, setCheckingOutImages] = useState<{ [key: string]: boolean }>({});
   const [downloadingImages, setDownloadingImages] = useState<{ [key: string]: boolean }>({});
   const { hiresPrice, isPriceLoading } = usePrice();
-
-  // Fetch generations
   const { generatedLogos, loading } = useGeneratedLogos();
 
-  // Memoized and sorted generations
+  // Memoized and sorted generations (unchanged)
   const sortedGenerations = useMemo(() => {
     let sorted = [...generatedLogos];
-
     switch (sortBy) {
       case 'newest':
-        sorted.sort((a, b) =>
-          new Date(b.generation_timestamp).getTime() -
-          new Date(a.generation_timestamp).getTime()
-        );
+        sorted.sort((a, b) => new Date(b.generation_timestamp).getTime() - new Date(a.generation_timestamp).getTime());
         break;
       case 'oldest':
-        sorted.sort((a, b) =>
-          new Date(a.generation_timestamp).getTime() -
-          new Date(b.generation_timestamp).getTime()
-        );
+        sorted.sort((a, b) => new Date(a.generation_timestamp).getTime() - new Date(b.generation_timestamp).getTime());
         break;
       case 'purchased':
         sorted = sorted.filter(gen => gen.is_high_res_purchased);
@@ -62,18 +57,13 @@ export function GenerationGallery() {
         sorted = sorted.filter(gen => !gen.is_high_res_purchased);
         break;
     }
-
     return sorted;
   }, [generatedLogos, sortBy]);
 
-  // Pagination calculations
+  // Pagination calculations (unchanged)
   const totalPages = Math.ceil(sortedGenerations.length / itemsPerPage);
-  const currentGenerations = sortedGenerations.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
+  const currentGenerations = sortedGenerations.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
-  // Reset page when sorting changes
   useEffect(() => {
     setPage(1);
   }, [sortBy]);
@@ -108,11 +98,13 @@ export function GenerationGallery() {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Your Generations</h2>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          Your Generations
+        </h2>
         <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
@@ -124,104 +116,181 @@ export function GenerationGallery() {
         </Select>
       </div>
 
-      {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: itemsPerPage }).map((_, index) => (
-            <Skeleton key={index} className="h-48 w-full rounded-lg" />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          >
+            {Array.from({ length: itemsPerPage }).map((_, index) => (
+              <Skeleton key={index} className="h-64 w-full rounded-lg" />
+            ))}
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-8"
+          >
             {currentGenerations.length === 0 ? (
-              <div className="col-span-full flex items-center justify-center h-64 border border-dashed border-gray-300 rounded-lg">
-                <p className="text-gray-500">
+              <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <p className="text-xl text-gray-500 text-center px-4">
                   {sortBy === 'purchased'
-                    ? "No purchased high-res logos"
+                    ? "No purchased high-res logos yet. Start enhancing your designs!"
                     : sortBy === 'not-purchased'
-                      ? "No logos available for purchase"
-                      : "No logos generated yet. Start creating your logos!"}
+                      ? "All your logos are purchased. Great job!"
+                      : "No logos generated yet. Start creating your unique designs!"}
                 </p>
               </div>
             ) : (
-              currentGenerations.map((generation) => (
-                <Card key={generation.generation_timestamp}>
-                  <CardContent className="p-4">
-                    <div className="relative w-full aspect-square">
-                      <img
-                        src={generation.id ? `/api/logo/${generation.id}` : '/placeholder-image.svg'}
-                        alt="Generated image"
-                        onError={(e) => {
-                          const imgElement = e.target as HTMLImageElement;
-                          imgElement.onerror = null; // Prevent infinite error loop
-                          imgElement.src = '/placeholder.svg'; // Fallback image
-                        }}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="rounded-lg object-cover"
-                      />
-                    </div>
-                    <p className="mt-2 text-sm text-gray-500">
-                      {new Date(generation.generation_timestamp).toLocaleString()}
-                    </p>
-                    {generation.is_high_res_purchased ? (
-                      <div className="flex justify-center mt-2 gap-2">
-                        <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button className="w-full" variant="default" >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex justify-center mt-2 gap-2">
-                        <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        {checkingOutImages[generation.id!] ?
-                          <Button className="w-full" variant="default" disabled>Buying...</Button>
-                          : <Button className="w-full" variant="default" onClick={() => handlePurchase(generation.id)}>
-                            Buy (${isPriceLoading ? '...' : hiresPrice})
-                          </Button>
-                        }
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-          {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-                {[...Array(totalPages)].map((_, i) => (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => setPage(i + 1)}
-                      isActive={page === i + 1}
-                      className="cursor-pointer"
-                    >
-                      {i + 1}
-                    </PaginationLink>
-                  </PaginationItem>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {currentGenerations.map((generation) => (
+                  <motion.div
+                    key={generation.generation_timestamp}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300">
+                      <CardContent className="p-0">
+                        <div className="relative">
+                          <img
+                            src={generation.id ? `/api/logo/${generation.id}` : '/placeholder-image.svg'}
+                            alt="Generated logo"
+                            onError={(e) => {
+                              const imgElement = e.target as HTMLImageElement;
+                              imgElement.onerror = null;
+                              imgElement.src = '/placeholder.svg';
+                            }}
+                            className="w-full aspect-square object-cover rounded-t-lg"
+                          />
+                          <div className="absolute top-2 right-2">
+                            <Badge variant={generation.is_high_res_purchased ? "secondary" : "destructive"}>
+                              {generation.is_high_res_purchased ? "Purchased" : "Not Purchased"}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="mr-1 h-4 w-4" />
+                            {new Date(generation.generation_timestamp).toLocaleString()}
+                          </div>
+                          {generation.is_high_res_purchased ? (
+                            <div className="flex justify-between gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
+                                      <Download className="mr-2 h-4 w-4" />
+                                      Download
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Download high-resolution logo</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button className="w-full" variant="default">
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Edit your purchased logo</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          ) : (
+                            <div className="flex justify-between gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
+                                      <Download className="mr-2 h-4 w-4" />
+                                      Preview
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Download low-resolution preview</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button 
+                                      className="w-full" 
+                                      variant="default" 
+                                      onClick={() => handlePurchase(generation.id)}
+                                      disabled={checkingOutImages[generation.id!]}
+                                    >
+                                      {checkingOutImages[generation.id!] ? (
+                                        <>Processing...</>
+                                      ) : (
+                                        <>
+                                          <CheckCircle className="mr-2 h-4 w-4" />
+                                          Buy (${isPriceLoading ? '...' : hiresPrice})
+                                        </>
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Purchase high-resolution logo</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 ))}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </>
-      )}
+              </div>
+            )}
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {[...Array(totalPages)].map((_, i) => (
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => setPage(i + 1)}
+                        isActive={page === i + 1}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
