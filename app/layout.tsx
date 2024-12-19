@@ -2,8 +2,9 @@ import type { Metadata } from "next"
 import { Poppins } from 'next/font/google'
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from 'react-hot-toast'
 
-const poppins = Poppins({ 
+const poppins = Poppins({
   weight: ['400', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
@@ -30,6 +31,10 @@ export default function RootLayout({
         >
           {children}
         </ThemeProvider>
+        <Toaster
+          position="bottom-center"
+          reverseOrder={false}
+        />
       </body>
     </html>
   )

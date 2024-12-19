@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Session } from '@supabase/supabase-js'
+import { get } from 'http'
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null)
@@ -74,12 +75,48 @@ export function useAuth() {
     return true
   }
 
+  const updateUserName = async (name: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('id', session?.user.id)
+        .single();
+
+      if (error) {
+        console.log(error)
+        return false
+      }
+      console.log(data)
+      return true
+    } catch (error) {
+      console.log(error)
+      return false
+    }
+  }
+
+  const getUserName = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', session?.user.id)
+        .single();
+
+      return data?.name
+    } catch (error) {
+      return null
+    }
+  }
+
   return {
     session,
     loading,
     signIn,
     signUp,
     signOut,
+    updateUserName,
+    getUserName,
     isAuthenticated: !!session
   }
 }

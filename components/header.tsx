@@ -48,9 +48,6 @@ export default function Header() {
       <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">
         About
       </Link>
-      <Link href="#" className="text-sm font-medium hover:text-primary transition-colors">
-        Contact
-      </Link>
     </>
   )
 
@@ -75,42 +72,36 @@ export default function Header() {
           )}
           {!loading && (session ? (
             <>
-              <div ref={dropdownRef}>
+              <div ref={dropdownRef} className="bg-white text-black dark:bg-transparent dark:text-white">
                 <Avatar onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="cursor-pointer">
                   <AvatarImage src={'/'} />
                   <AvatarFallback>{session.user.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-xl shadow-md">
+                  <div className="absolute right-0 mt-2 w-48 border rounded-xl shadow-md bg-white text-black dark:bg-gray-700 dark:text-white">  
                     <Link href="/dashboard" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left">
+                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
                         <LayoutDashboard className="w-4 h-4 mr-2 inline-block" />
                         Dashboard
                       </Button>
                     </Link>
                     <Link href="/dashboard/profile" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left">
+                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
                         <User className="w-4 h-4 mr-2 inline-block" />
                         Profile
                       </Button>
                     </Link>
                     <Link href="/dashboard/billing" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left">
+                      <Button variant="ghost" className="justify-start w-full text-left text-black dark:text-white">  
                         <CreditCard className="w-4 h-4 mr-2 inline-block" />
                         Billing
-                      </Button>
-                    </Link>
-                    <Link href="/dashboard/settings" className="block px-4 py-2">
-                      <Button variant="ghost" className="justify-start w-full text-left">
-                        <Settings className="w-4 h-4 mr-2 inline-block" />
-                        Settings
                       </Button>
                     </Link>
                     <div className="h-0.5 w-full px-4">
                       <div className="border-b border-gray-200"></div>
                     </div>
                     <div className="block px-4 py-2">
-                      <Button variant="ghost" onClick={signOut} className="justify-start w-full text-left">
+                      <Button variant="ghost" onClick={signOut} className="justify-start w-full text-left text-black dark:text-white">  
                         <LogOut className="w-4 h-4 mr-2 inline-block" />
                         Sign Out
                       </Button>

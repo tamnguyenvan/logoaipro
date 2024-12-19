@@ -3,17 +3,19 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Image, CreditCard, User, Home, LogOut, Menu } from "lucide-react"
+import { LayoutDashboard, Image, CreditCard, User, Home, LogOut, Menu, Sparkles } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger, SheetHeader, SheetDescription } from "@/components/ui/sheet"
 import { ModeToggle } from "../mode-toggle"
+import { useAuth } from "@/hooks/useAuth"
+import { useRouter } from "next/navigation"
 
 const links = [
-  { name: "Home", href: "/", icon: Home },
-  { name: "Profile", href: "/dashboard/profile", icon: User },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Profile", href: "/dashboard/profile", icon: User },
+  { name: "AI Logo Generator", href: "/logo-generator", icon: Sparkles },
   { name: "Generations", href: "/dashboard/generations", icon: Image },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
 ]
@@ -21,11 +23,20 @@ const links = [
 export function Sidebar() {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { signOut } = useAuth()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.push("/")
+  }
 
   const SidebarContent = () => (
     <>
       <div className="flex h-16 items-center justify-center border-b border-gray-700">
-        <h1 className="text-2xl font-bold">LogoAIPro</h1>
+        <Link href="/logo-generator">
+          <h1 className="text-2xl font-bold">LogoAIPro</h1>
+        </Link>
       </div>
       <div className="flex-1 space-y-1 p-4">
         {links.map((link) => (
@@ -48,17 +59,14 @@ export function Sidebar() {
         ))}
 
         <div className="flex-1 space-y-1 p-4">
-        <ModeToggle />
+          <ModeToggle />
         </div>
       </div>
       <div className="mt-auto p-4">
         <Button
           variant="outline"
-          className="w-full justify-start text-gray-400 hover:bg-gray-700 hover:text-white"
-          onClick={() => {
-            // Add logout logic here
-            console.log("Logout clicked")
-          }}
+          className="w-full justify-start text-gray-600 dark:text-gray-400 hover:bg-gray-700 hover:text-white md:w-full"
+          onClick={handleSignOut}
         >
           <LogOut className="mr-3 h-5 w-5" />
           Log out
@@ -86,7 +94,10 @@ export function Sidebar() {
             <span className="sr-only">Toggle Menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 bg-gray-800 p-0">
+        <SheetContent
+          side="left"
+          className="w-64 bg-gray-800 p-0 flex flex-col overflow-auto"
+        >
           <SheetHeader>
             <SheetDescription>LogoAIPro</SheetDescription>
           </SheetHeader>
@@ -99,4 +110,3 @@ export function Sidebar() {
     </>
   )
 }
-

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,21 +8,45 @@ import { Loader2, AlertTriangle, Sparkles, Download, Pencil } from 'lucide-react
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { useRouter } from 'next/navigation'
 import { useGenerations } from '@/hooks/useGenerations'
 import { useAuth } from '@/hooks/useAuth'
+import { useDownload } from '@/hooks/useDownload'
+import { useCheckout } from '@/hooks/usePayment'
+import { usePrice } from '@/hooks/usePrice'
 
-interface ModelResponse {
-  image: string;
+interface LogoGeneration {
+  generationId: string;
 }
+
+const loadingMessages = [
+  "Crafting your unique logo...",
+  "Unleashing creativity...",
+  "Designing something awesome...",
+  "Bringing your vision to life...",
+  "Generating logo magic...",
+  "Mixing colors and shapes...",
+  "Transforming your ideas...",
+  "Almost there..."
+];
 
 export default function LogoGenerator() {
   const [prompt, setPrompt] = useState('')
-  const [generatedLogo, setGeneratedLogo] = useState<string | null>(null)
+  const [logoGeneration, setLogoGeneration] = useState<LogoGeneration | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
   const { generationsRemaining, generationsLoading, refetchGenerations } = useGenerations()
+  const { downloadImage, isDownloading } = useDownload()
   const router = useRouter()
   const { session } = useAuth()
+  const { checkout } = useCheckout()
+  const { hiresPrice, isPriceLoading } = usePrice()
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -49,7 +73,7 @@ export default function LogoGenerator() {
       return
     }
 
-    setGeneratedLogo(null)
+    setLogoGeneration(null)
     setIsLoading(true)
     try {
       const response = await fetch('/api/generate-logo', {
@@ -68,8 +92,8 @@ export default function LogoGenerator() {
         return;
       }
 
-      const data = await response.json() as ModelResponse
-      setGeneratedLogo(data.image)
+      const data = await response.json() as LogoGeneration
+      setLogoGeneration(data)
       await refetchGenerations();
     } catch (error) {
       console.error('Error generating logo:', error)
@@ -78,46 +102,66 @@ export default function LogoGenerator() {
     }
   }
 
-  const handleBuyGenerations = () => {
-    // TODO: Implement purchase logic
-    alert("Redirecting to purchase page...")
-  }
+  useEffect(() => {
+    let messageIndex = 0;
+    let messageInterval: NodeJS.Timeout | null = null;
 
-  const editImage = (generatedLogo: string) => {
-    router.push(`/logo-editor?imageUrl=${encodeURIComponent(generatedLogo)}`);
-  }
+    if (isLoading) {
+      messageInterval = setInterval(() => {
+        messageIndex = (messageIndex + 1) % loadingMessages.length;
+        setLoadingMessage(loadingMessages[messageIndex]);
+      }, 10000);
+    }
 
-  const downloadImage = async (url: string) => {
-    try {
-      // Fetch the image data using a proxy route on your own server
-      const response = await fetch(`/api/download-image?url=${encodeURIComponent(url)}`, {
-        method: 'GET'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download image');
+    return () => {
+      if (messageInterval) {
+        clearInterval(messageInterval);
       }
+    };
+  }, [isLoading]);
 
-      const blob = await response.blob();
+  useEffect(() => {
+  }, [])
 
-      // Create a link element and trigger download
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'generated-logo.png';
-      document.body.appendChild(link);
-      link.click();
+  const handleBuyCredits = async () => {
+    try {
+      const variantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_BUY_CREDITS_PLAN_ID as string;
+      const checkoutUrl = await checkout(variantId);
+      if (!checkoutUrl) {
+        throw new Error('Failed to create checkout session');
+      }
+      router.push(checkoutUrl);
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session. Please try again.');
+    }
+  }
 
-      // Clean up
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
+  const handleDownload = async (imageId: string) => {
+    try {
+      await downloadImage(imageId);
     } catch (error) {
       console.error('Error downloading image:', error);
       alert('Failed to download image. Please try again.');
     }
   };
 
+  const handleBuyHires = async (generationId: string) => {
+    try {
+      const variantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_DOWNLOAD_HIRES_ID as string;
+      const checkoutUrl = await checkout(variantId, generationId);
+      if (!checkoutUrl) {
+        throw new Error('Failed to create checkout session');
+      }
+      router.push(checkoutUrl);
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session. Please try again.');
+    }
+  }
+
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto py-12 px-4">
       <div className="grid md:grid-cols-2 gap-8">
         <Card>
           <CardHeader className="relative">
@@ -173,8 +217,8 @@ export default function LogoGenerator() {
                   <AlertDescription>
                     You've run out of logo generations. Purchase more to continue creating logos.
                   </AlertDescription>
-                  <Button onClick={handleBuyGenerations} className="mt-2">
-                    Buy More Generations
+                  <Button onClick={() => handleBuyCredits()} className="mt-2">
+                    Buy More Credits
                   </Button>
                 </Alert>
               )}
@@ -191,14 +235,14 @@ export default function LogoGenerator() {
                 <div className="flex flex-col items-center justify-center space-y-4">
                   <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   <p className="text-muted-foreground text-lg font-medium animate-pulse">
-                    Generating logo...
+                    {loadingMessage}
                   </p>
                 </div>
-              ) : generatedLogo ? (
+              ) : logoGeneration ? (
                 <div className="w-full h-full flex flex-col items-center justify-center">
                   <div className="flex-grow flex items-center justify-center p-4">
                     <img
-                      src={generatedLogo}
+                      src={logoGeneration.generationId ? `/api/logo/${logoGeneration.generationId}` : '/placeholder-image.svg'}
                       alt="Generated Logo"
                       width={128}
                       height={128}
@@ -206,16 +250,32 @@ export default function LogoGenerator() {
                     />
                   </div>
                   <div className="flex flex-row w-full items-center justify-center p-4 bg-background/70 backdrop-blur-sm">
-                    <Button
-                      onClick={() => downloadImage(generatedLogo)}
-                      size="lg"
-                      variant="default"
-                      className="font-semibold"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="lg"
+                          variant="default"
+                          className="font-semibold"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 transition-all duration-200 ease-in-out">
+                        {isDownloading ? <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer" disabled>
+                          Downloading...
+                        </DropdownMenuItem>
+                          : <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer" onClick={() => handleDownload(logoGeneration.generationId)}>
+                            Download Preview (Free)
+                          </DropdownMenuItem>
+                        }
+                        <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer" onClick={() => handleBuyHires(logoGeneration.generationId)}>
+                          Buy Hi-Res ({isPriceLoading ? '...' : `$${hiresPrice}`})
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">

@@ -1,3 +1,4 @@
+'use client'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,6 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useTransactions } from "@/hooks/useTransactions"
 
 const plans = [
   { name: "Basic", price: "$9.99", generations: 100 },
@@ -15,13 +18,21 @@ const plans = [
   { name: "Enterprise", price: "$49.99", generations: "Unlimited" },
 ]
 
-const billingHistory = [
-  { date: "2023-05-01", amount: "$19.99", status: "Paid" },
-  { date: "2023-04-01", amount: "$19.99", status: "Paid" },
-  { date: "2023-03-01", amount: "$19.99", status: "Paid" },
-]
+// const billingHistory = [
+//   { date: "2023-05-01", amount: "$19.99", status: "Paid" },
+//   { date: "2023-04-01", amount: "$19.99", status: "Paid" },
+//   { date: "2023-03-01", amount: "$19.99", status: "Paid" },
+// ]
+
+interface BillingHistoryItem {
+  date: string;
+  amount: string;
+  status: string;
+}
 
 export function BillingSection() {
+  const { transactions, loading } = useTransactions()
+  
   return (
     <div className="space-y-8">
       <Card>
@@ -55,19 +66,33 @@ export function BillingSection() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
+                <TableHead>Transaction Type</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {billingHistory.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell>{item.date}</TableCell>
-                  <TableCell>{item.amount}</TableCell>
-                  <TableCell>{item.status}</TableCell>
+              {loading ? (
+              <TableRow>
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full mt-2" />
+                    <Skeleton className="h-6 w-full mt-2" />
+                  </TableCell>
                 </TableRow>
-              ))}
+              </TableRow>
+            ) :
+              transactions.map((transaction) => (
+                <TableRow key={transaction.id}>
+                  <TableCell>{transaction.transaction_type}</TableCell>
+                  <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    {new Date(transaction.transaction_timestamp).toLocaleDateString()}
+                  </TableCell>
+                </TableRow>
+              ))
+            }
             </TableBody>
           </Table>
         </CardContent>

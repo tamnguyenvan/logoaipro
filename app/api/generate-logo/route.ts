@@ -1,23 +1,17 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { putObject, objectExists, getObjectPresignedUrl } from "@/lib/cloudflare";
+
 export const runtime = "edge";
 
 const ERROR_CODES = {
-  10001: "Prompt invalid",
-  10010: "Unauthorized",
-  10050: "Unknown error",
+  promptInvalid: 10001,
+  noGenerationsRemaining: 10002,
+  generationFailed: 10003,
+  imageNotGenerated: 10004,
+  unauthorized: 10010,
+  unknownError: 10050,
 };
-
-const s3Client = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function POST(request: Request) {
   // Check authenticated user
@@ -38,7 +32,7 @@ export async function POST(request: Request) {
   // Validate the prompt
   const validationResult = validatePrompt(prompt);
   if (!validationResult.isValid) {
-    return NextResponse.json({ error: validationResult.message, code: 10001 }, { status: 400 });
+    return NextResponse.json({ error: validationResult.message, code: ERROR_CODES.promptInvalid }, { status: 400 });
   }
 
   // Log the prompt
@@ -52,7 +46,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: "User not found or error fetching data", code: 1050 }, { status: 500 });
+    return NextResponse.json({ error: "User not found or error fetching data", code: ERROR_CODES.unknownError }, { status: 500 });
   }
 
   let freeGenerationsRemaining = data.free_generations_remaining;
@@ -61,70 +55,60 @@ export async function POST(request: Request) {
   console.log('Current generations remaining:', totalGenerations);
 
   if (totalGenerations === 0) {
-    return NextResponse.json({ error: "No generations remaining", code: 1050 }, { status: 500 });
+    return NextResponse.json({ error: "No generations remaining", code: ERROR_CODES.noGenerationsRemaining }, { status: 500 });
   }
 
-  // Call the Beam API to generate the logo
+  // Call the AI API to generate the logo
   try {
-    const beamServerUrl = process.env.BEAM_SERVER_URL;
-    const beamApiKey = process.env.BEAM_API_KEY;
-    const response = await fetch(`${beamServerUrl}`, {
+    const aiServerUrl = process.env.AI_SERVER_URL;
+    const aiApiKey = process.env.AI_API_KEY;
+    const response = await fetch(`${aiServerUrl}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${beamApiKey}`,
+        Authorization: `Bearer ${aiApiKey}`,
       },
       body: JSON.stringify({
         prompt: prompt,
       }),
     });
 
-    const beamResponse = await response.json();
-    console.log('Beam API response:', beamResponse);
+    const aiResponse = await response.json();
+    console.log('AI API response:', aiResponse);
 
-    // beamResponse.image is a image url, download the image and store it in R2
-    if (!beamResponse.image) {
-      return NextResponse.json({ error: "Image not generated", code: 1050 }, { status: 500 });
+    if (!aiResponse.preview || !aiResponse.hires) {
+      return NextResponse.json({ error: "AI API response missing image data", code: ERROR_CODES.generationFailed }, { status: 500 });
     }
 
-    // Fetch the image data
-    const imageResponse = await fetch(beamResponse.image);
-    const blob = await imageResponse.blob();
-    console.log('Image blob:', blob);
+    // Decode the base64 image data
+    const previewImageData = Buffer.from(aiResponse.preview, 'base64');
+    const highResImageData = Buffer.from(aiResponse.hires, 'base64');
 
     // Create image id by generating uuid v4
-    const imageId = Math.random().toString(36).substring(2, 9);
+    const previewImageId = Math.random().toString(36).substring(2, 9);
+    const highResImageId = Math.random().toString(36).substring(2, 9);
 
-    // Put the image in R2
-    const objectKey = `${imageId}.png`;
-    const command = new PutObjectCommand({
-      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
-      Key: objectKey,
-      Body: blob,
-      ContentType: "image/png",
-    });
+    // Put the images in R2
+    const previewObjectKey = `generations/${user.id}/${previewImageId}.png`;
+    const highResObjectKey = `generations/${user.id}/${highResImageId}.png`;
 
-    // First, actually send the PUT command to upload the object
-    await s3Client.send(command);
+    // Put the images in R2
+    await putObject(previewObjectKey, new Blob([previewImageData], { type: 'image/png' }));
+    await putObject(highResObjectKey, new Blob([highResImageData], { type: 'image/png' }));
 
-    // Then, create a HeadObjectCommand to verify the object exists
-    const headCommand = new HeadObjectCommand({
-      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
-      Key: objectKey,
-    });
+    // Check if the images already exist in R2
+    const previewObjectExists = await objectExists(previewObjectKey);
+    const highResObjectExists = await objectExists(highResObjectKey);
 
-    // Verify the object exists
-    await s3Client.send(headCommand);
+    if (!previewObjectExists || !highResObjectExists) {
+      return NextResponse.json({ error: "Image not generated", code: ERROR_CODES.imageNotGenerated }, { status: 500 });
+    }
 
     // Now generate the presigned URL
-    const getCommand = new GetObjectCommand({
-      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME!,
-      Key: objectKey,
-    });
-    const presignedUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
+    const previewPresignedUrl = await getObjectPresignedUrl(previewObjectKey, 3600);
 
-    console.log('Object uploaded successfully');
-    console.log('Presigned URL:', presignedUrl);
+    console.log('Objects uploaded successfully');
+    console.log('Presigned URL:', previewPresignedUrl);
 
     // Update the free generations remaining for the user
     let isFreeGeneration = true;
@@ -139,7 +123,7 @@ export async function POST(request: Request) {
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: "Error updating generations remaining", code: 1050 }, { status: 500 });
+      return NextResponse.json({ error: "Error updating generations remaining", code: ERROR_CODES.unknownError }, { status: 500 });
     }
 
     if (freeGenerationsRemaining === 0 && purchasedGenerationsRemaining > 0) {
@@ -153,37 +137,52 @@ export async function POST(request: Request) {
         .single();
 
       if (updateError) {
-        return NextResponse.json({ error: "Error updating generations remaining", code: 1050 }, { status: 500 });
+        return NextResponse.json({ error: "Error updating generations remaining", code: ERROR_CODES.unknownError }, { status: 500 });
       }
     }
 
-    // Update user generations history
-    const { error: insertError } = await supabase.from("user_generations").insert({
-      user_id: user.id,
-      is_free_generation: isFreeGeneration,
-      preview_image_url: presignedUrl,
-      high_res_image_url: presignedUrl,
-      is_high_res_purchased: false,
-      generation_timestamp: new Date().toISOString(),
-      generation_details: JSON.stringify({ prompt }),
-    });
+    // Insert record and get the generation ID
+    const { data, error: insertError } = await supabase
+      .from("user_generations")
+      .insert({
+        user_id: user.id,
+        is_free_generation: isFreeGeneration,
+        preview_image_id: previewImageId,
+        high_res_image_id: highResImageId,
+        is_high_res_purchased: false,
+        generation_timestamp: new Date().toISOString(),
+        generation_details: JSON.stringify({ prompt }),
+      })
+      .select('id')  // Explicitly select the ID
+      .single();
 
     if (insertError) {
-      return NextResponse.json({ error: "Error updating user generations history", code: 1050 }, { status: 500 });
+      console.error('Insert error:', insertError);
+      return NextResponse.json({
+        error: "Error updating user generations history",
+        code: ERROR_CODES.unknownError
+      }, { status: 500 });
     }
+
+    // Access the generation ID
+    const generationId = data?.id;
 
     console.log('Updated generations remaining:', userData.generations_remaining);
 
-    return NextResponse.json({image: presignedUrl, generationDetails: JSON.stringify({ prompt })});
+    return NextResponse.json({
+      generationId: generationId,
+      generationDetails: JSON.stringify({ prompt })
+    }
+    );
   } catch (error) {
     console.error('Error in POST handler:', error);
-    return NextResponse.json({ error: "Internal Server Error", code: 1050 }, { status: 500 });
+    return NextResponse.json({ error: "Internal Server Error", code: ERROR_CODES.unknownError }, { status: 500 });
   }
 }
 
 const validatePrompt = (prompt: string) => {
   // Regex pattern to match only letters, numbers, and spaces
-  const regex = /^[a-zA-Z0-9,;!\s]+$/;
+  const regex = /^[a-zA-Z0-9,;.!\s]+$/;
 
   // Check if the prompt matches the pattern
   const isValidPattern = regex.test(prompt);
@@ -192,7 +191,7 @@ const validatePrompt = (prompt: string) => {
   }
 
   // Check length
-  const isValidLength = prompt.length <= 100 && prompt.length > 0;
+  const isValidLength = prompt.length <= 256 && prompt.length > 0;
   if (isValidLength) {
     return { isValid: isValidLength, message: "Prompt must be at least 1 character and no more than 100 characters." };
   }

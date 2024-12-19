@@ -1,17 +1,31 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "react-hot-toast"
 
 export function ProfileSection() {
-  const [name, setName] = useState("John Doe")
-  const [email, setEmail] = useState("john.doe@example.com")
+  const { session, updateUserName, getUserName } = useAuth()
+  const [name, setName] = useState("")
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const userName = await getUserName()
+      if (userName) {
+        setName(userName)
+      }
+    }
+    fetchUserProfile()
+  }, [session])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Handle profile update logic here
-    console.log("Profile updated", { name, email })
+    // console.log("Profile updated", { name, email })
+    updateUserName(name)
+    toast.success("Profile updated successfully")
   }
 
   return (
@@ -34,8 +48,8 @@ export function ProfileSection() {
             <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={session?.user.email}
+              disabled
             />
           </div>
           <Button type="submit">Update Profile</Button>

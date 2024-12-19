@@ -19,12 +19,21 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { useCheckout } from "@/hooks/usePayment";
+import { useDownload } from "@/hooks/useDownload";
+import { usePrice } from "@/hooks/usePrice";
+import { Download, FilePenLine, Pencil } from "lucide-react";
 
 export function GenerationGallery() {
   // Pagination and sorting states
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'purchased' | 'not-purchased'>('newest');
   const itemsPerPage = 12;
+  const { checkout } = useCheckout();
+  const { downloadImage } = useDownload();
+  const [checkingOutImages, setCheckingOutImages] = useState<{ [key: string]: boolean }>({});
+  const [downloadingImages, setDownloadingImages] = useState<{ [key: string]: boolean }>({});
+  const { hiresPrice, isPriceLoading } = usePrice();
 
   // Fetch generations
   const { generatedLogos, loading } = useGeneratedLogos();
@@ -69,6 +78,35 @@ export function GenerationGallery() {
     setPage(1);
   }, [sortBy]);
 
+  const handlePurchase = async (generationId: string) => {
+    try {
+      setCheckingOutImages(prev => ({ ...prev, [generationId]: true }));
+      const variantId = process.env.NEXT_PUBLIC_LEMONSQUEEZY_VARIANT_DOWNLOAD_HIRES_ID as string;
+      const checkoutUrl = await checkout(variantId, generationId);
+      if (!checkoutUrl) {
+        throw new Error('Failed to create checkout session');
+      }
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      alert('Failed to create checkout session. Please try again.');
+    } finally {
+      setCheckingOutImages(prev => ({ ...prev, [generationId]: false }));
+    }
+  }
+
+  const handleDownload = async (imageId: string) => {
+    try {
+      setDownloadingImages(prev => ({ ...prev, [imageId]: true }))
+      await downloadImage(imageId);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      alert('Failed to download image. Please try again.');
+    } finally {
+      setDownloadingImages(prev => ({ ...prev, [imageId]: false }))
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -111,8 +149,13 @@ export function GenerationGallery() {
                   <CardContent className="p-4">
                     <div className="relative w-full aspect-square">
                       <img
-                        src={generation.preview_image_url}
+                        src={generation.id ? `/api/logo/${generation.id}` : '/placeholder-image.svg'}
                         alt="Generated image"
+                        onError={(e) => {
+                          const imgElement = e.target as HTMLImageElement;
+                          imgElement.onerror = null; // Prevent infinite error loop
+                          imgElement.src = '/placeholder.svg'; // Fallback image
+                        }}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="rounded-lg object-cover"
                       />
@@ -120,10 +163,28 @@ export function GenerationGallery() {
                     <p className="mt-2 text-sm text-gray-500">
                       {new Date(generation.generation_timestamp).toLocaleString()}
                     </p>
-                    {!generation.is_high_res_purchased && (
-                      <Button className="w-full" variant="default">
-                        Purchase High-Res
-                      </Button>
+                    {generation.is_high_res_purchased ? (
+                      <div className="flex justify-center mt-2 gap-2">
+                        <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button className="w-full" variant="default" >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center mt-2 gap-2">
+                        <Button className="w-full" variant="outline" onClick={() => handleDownload(generation.id!)} disabled={downloadingImages[generation.id!]}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        {checkingOutImages[generation.id!] ?
+                          <Button className="w-full" variant="default" disabled>Buying...</Button>
+                          : <Button className="w-full" variant="default" onClick={() => handlePurchase(generation.id)}>
+                            Buy (${isPriceLoading ? '...' : hiresPrice})
+                          </Button>
+                        }
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -136,6 +197,7 @@ export function GenerationGallery() {
                 <PaginationItem>
                   <PaginationPrevious
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                   />
                 </PaginationItem>
                 {[...Array(totalPages)].map((_, i) => (
@@ -143,6 +205,7 @@ export function GenerationGallery() {
                     <PaginationLink
                       onClick={() => setPage(i + 1)}
                       isActive={page === i + 1}
+                      className="cursor-pointer"
                     >
                       {i + 1}
                     </PaginationLink>
@@ -151,6 +214,7 @@ export function GenerationGallery() {
                 <PaginationItem>
                   <PaginationNext
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    className={page === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                   />
                 </PaginationItem>
               </PaginationContent>

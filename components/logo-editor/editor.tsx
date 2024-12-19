@@ -117,7 +117,7 @@ export default function LogoEditor({ file, onClear }: EditorProps) {
       a.href = url;
       // Get original filename without extension
       const originalName = file?.name.replace(/\.[^/.]+$/, '');
-      a.download = `${originalName}-MagikImg.png`;
+      a.download = `${originalName}-LogoAIPro.png`;
       a.click();
       URL.revokeObjectURL(url);
     }, 'image/png');

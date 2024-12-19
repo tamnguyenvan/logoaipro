@@ -12,7 +12,7 @@ INSERT INTO system_configurations
 (config_key, config_value, description) 
 VALUES 
 ('FREE_GENERATIONS_DAILY_LIMIT', '10', 'Số lượng generations miễn phí mỗi ngày'),
-('HIGH_RES_IMAGE_PRICE', '5.00', 'Giá của một ảnh high-resolution'),
+('HIGH_RES_IMAGE_PRICE', '9.99', 'Giá của một ảnh high-resolution'),
 ('GENERATION_PLAN_DEFAULT_PRICE', '5.00', 'Giá mặc định của gói generations'),
 ('GENERATION_PLAN_DEFAULT_COUNT', '50', 'Số lượng generations trong gói mặc định');
 
@@ -27,9 +27,11 @@ CREATE TABLE users (
     last_free_generations_reset TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Bảng generation_plans: Các gói generation có thể mua
-CREATE TABLE generation_plans (
+-- Bảng creation_plans: Các gói generation có thể mua
+CREATE TABLE credits_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    lemonsqueezy_product_id TEXT NOT NULL,
+    lemonsqueezy_variant_id TEXT NOT NULL,
     name TEXT NOT NULL,
     price NUMERIC(10,2) NOT NULL,
     generations_count INTEGER NOT NULL
@@ -40,14 +42,14 @@ CREATE TABLE user_generations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id),
     is_free_generation BOOLEAN DEFAULT TRUE,
-    preview_image_url TEXT,
-    high_res_image_url TEXT,
+    preview_image_id TEXT,
+    high_res_image_id TEXT,
     is_high_res_purchased BOOLEAN DEFAULT FALSE,
     generation_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     generation_details JSONB
 );
 
--- Bảng transactions: Theo dõi các giao dịch mua generation và high-res image
+-- Bảng transactions: Theo dõi các giao dịch mua generation và hires image
 CREATE TABLE transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id),
@@ -95,5 +97,5 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Seed data cho generation plans
-INSERT INTO generation_plans (name, price, generations_count) VALUES 
+INSERT INTO credits_plans (name, price, generations_count) VALUES 
 ('50 Generations', 5.00, 50);

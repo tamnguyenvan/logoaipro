@@ -60,8 +60,9 @@ export const useGenerations = () => {
 };
 
 interface GeneratedLogo {
-  preview_image_url: string;
-  high_res_image_url: string;
+  id: string;
+  preview_image_id: string;
+  high_res_image_id: string;
   is_high_res_purchased: boolean;
   generation_timestamp: string;
 }
@@ -79,7 +80,7 @@ export const useGeneratedLogos = () => {
 
         const { data, error } = await supabase
           .from("user_generations")
-          .select("preview_image_url,high_res_image_url,is_high_res_purchased,generation_timestamp")
+          .select("id,preview_image_id,high_res_image_id,is_high_res_purchased,generation_timestamp")
           .eq("user_id", user.data.user.id);
 
         if (error) throw error;
