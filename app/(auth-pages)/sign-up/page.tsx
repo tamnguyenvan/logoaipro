@@ -1,16 +1,28 @@
-import SignUpForm from '@/components/auth/sign-up-form'
+import SignUpForm from "@/components/auth/sign-up-form"
 
 export default function SignUpPage() {
   return (
-    <div className="container mx-auto py-12 px-4">
-      <h1 className="text-4xl font-bold mb-4 text-center">
-        <span className="cute-underline">Sign Up for LogoAIPro</span>
-      </h1>
-      <p className="text-xl text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-        Join LogoAIPro today and start creating stunning logos with AI technology.
-      </p>
-      <SignUpForm />
+    <div className="grid min-h-svh lg:grid-cols-2">
+      <div className="flex flex-col gap-4 p-6 md:p-10">
+        <div className="flex justify-center gap-2 md:justify-start">
+          <a href="/" className="flex items-center gap-2 font-bold text-2xl">
+            <img src="/logo.png" alt="Logo" className="w-6 h-6" />
+            LogoAIPro
+          </a>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-xs">
+            <SignUpForm />
+          </div>
+        </div>
+      </div>
+      <div className="relative hidden bg-muted lg:block">
+        <img
+          src="/placeholder.svg"
+          alt="Image"
+          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+        />
+      </div>
     </div>
   )
 }
-

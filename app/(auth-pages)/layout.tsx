@@ -4,7 +4,7 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-12 items-start py-20">
+    <div className="">
       {children}
     </div>
   );

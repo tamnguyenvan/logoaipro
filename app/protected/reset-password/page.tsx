@@ -32,7 +32,8 @@
 // }
 
 // import { resetPasswordAction } from "@/actions/auth";
-import { SubmitButton } from "@/components/auth/submit-button";
+// import { SubmitButton } from "@/components/auth/submit-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -62,9 +63,9 @@ export default async function ResetPassword() {
           required
         />
         {/* TODO: */}
-        <SubmitButton pendingText="Resetting password..." >
+        <Button >
           Reset password
-        </SubmitButton>
+        </Button>
       </form>
     </div>
   );

@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, AlertTriangle, Sparkles, Download, Pencil } from 'lucide-react'
+import { Loader2, AlertTriangle, Sparkles, Download, Command } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import { useRouter } from 'next/navigation'
 import { useGenerations } from '@/hooks/useGenerations'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,6 +24,25 @@ import { usePrice } from '@/hooks/usePrice'
 interface LogoGeneration {
   generationId: string;
 }
+
+const promptExamples = [
+  {
+    label: "Tech Startup",
+    text: "A modern, minimal logo for a tech startup focused on artificial intelligence. Use cool blue tones and geometric shapes."
+  },
+  {
+    label: "Eco-friendly",
+    text: "An organic, nature-inspired logo for an eco-friendly cosmetics brand. Include leaf elements and earth tones."
+  },
+  {
+    label: "Creative Agency",
+    text: "A bold, artistic logo for a creative design agency. Use vibrant colors and abstract shapes that suggest creativity and innovation."
+  },
+  {
+    label: "Restaurant",
+    text: "An elegant logo for an upscale Italian restaurant. Incorporate subtle culinary elements and a sophisticated color palette."
+  }
+];
 
 const loadingMessages = [
   "Crafting your unique logo...",
@@ -40,18 +59,17 @@ export default function LogoGenerator() {
   const [prompt, setPrompt] = useState('')
   const [logoGeneration, setLogoGeneration] = useState<LogoGeneration | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
+  const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0])
   const { generationsRemaining, generationsLoading, refetchGenerations } = useGenerations()
   const { downloadImage, isDownloading } = useDownload()
   const router = useRouter()
   const { session } = useAuth()
   const { checkout } = useCheckout()
   const { hiresPrice, isPriceLoading } = usePrice()
-
-  const formRef = useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null)
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.ctrlKey && e.key === 'Enter') {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
       formRef.current?.dispatchEvent(new Event('submit', { bubbles: true }));
     }
@@ -60,7 +78,8 @@ export default function LogoGenerator() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!session) {
-      router.push(`/login?returnTo=${encodeURIComponent(window.location.href)}&prompt=${encodeURIComponent(prompt)}`);
+      router.push(`/login`);
+      return;
     }
 
     if (!generationsLoading && (generationsRemaining ?? 0) <= 0) {
@@ -168,10 +187,10 @@ export default function LogoGenerator() {
             <CardTitle>Describe Your Logo</CardTitle>
             <div className="absolute top-4 right-4 flex items-center">
               {generationsLoading ? (
-                <Skeleton className="h-4 w-1/2 bg-red-500" />
+                <Skeleton className="h-4 w-1/2" />
               ) : (
                 session && (
-                  <Badge>
+                  <Badge variant="secondary">
                     <span className="font-medium">Generations left: {generationsRemaining ?? 0}</span>
                   </Badge>
                 )
@@ -179,45 +198,67 @@ export default function LogoGenerator() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col">
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-                <Textarea
-                  placeholder="Describe your business or logo ideas (e.g., 'A modern tech startup focused on sustainability')"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={6}
-                  className="w-full resize-none"
-                />
-                <div className="flex justify-between items-center">
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={session !== null && (isLoading || (generationsRemaining ?? 0) <= 0)}
-                    className="w-full font-semibold">
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate Logo
-                      </>
-                    )}
-                  </Button>
+            <div className="flex flex-col space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm text-muted-foreground">Example prompts:</label>
+                <div className="flex flex-wrap gap-2">
+                  {promptExamples.map((example, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPrompt(example.text)}
+                      className="text-xs"
+                    >
+                      {example.label}
+                    </Button>
+                  ))}
                 </div>
+              </div>
+
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+                <div className="relative">
+                  <Textarea
+                    placeholder="Describe your business or logo ideas..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={6}
+                    className="w-full resize-none pr-24"
+                  />
+                  <div className="absolute right-3 bottom-3 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Command className="h-3 w-3" />
+                    <span>+ ↵</span>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={session !== null && (isLoading || (generationsRemaining ?? 0) <= 0)}
+                  className="w-full font-semibold">
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Generate Logo
+                    </>
+                  )}
+                </Button>
               </form>
 
               {session && !generationsLoading && generationsRemaining <= 0 && (
-                <Alert variant="destructive" className="mt-8">
+                <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertTitle>Attention</AlertTitle>
                   <AlertDescription>
                     You've run out of logo generations. Purchase more to continue creating logos.
                   </AlertDescription>
-                  <Button onClick={() => handleBuyCredits()} className="mt-2">
+                  <Button onClick={handleBuyCredits} className="mt-2">
                     Buy More Credits
                   </Button>
                 </Alert>
@@ -225,6 +266,7 @@ export default function LogoGenerator() {
             </div>
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Generated Logo</CardTitle>

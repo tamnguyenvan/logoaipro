@@ -1,110 +1,223 @@
 'use client'
-
+import { z } from 'zod'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Session } from '@supabase/supabase-js'
-import { get } from 'http'
+import { Session, AuthError } from '@supabase/supabase-js'
+import { SignUpInput, SignInInput, SignUpSchema, SignInSchema } from '@/types/auth'
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
+    let mounted = true
+
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
-      setSession(data.session)
-      setLoading(false)
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error) throw error
+        if (mounted) setSession(data.session)
+      } catch (err) {
+        console.error('Session check error:', err)
+      } finally {
+        if (mounted) setLoading(false)
+      }
     }
 
     checkSession()
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        setSession(newSession)
+      async (event, newSession) => {
+        if (mounted) {
+          setSession(newSession)
+          if (event === 'SIGNED_IN') {
+            // Create or update user profile
+            if (newSession?.user) {
+              await updateUserProfile(newSession.user.id)
+            }
+          }
+        }
       }
     )
 
     return () => {
+      mounted = false
       authListener.subscription.unsubscribe()
     }
   }, [router])
 
-  const signIn = async (email: string, password: string) => {
-    setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      // toast.error(error.message)
-      setLoading(false)
-      return false
+  const handleAuthError = (error: AuthError | null) => {
+    if (!error) return null
+    
+    // Map Supabase error codes to user-friendly messages
+    const errorMessages: Record<string, string> = {
+      'auth/invalid-email': 'Invalid email address',
+      'auth/user-not-found': 'No account found with this email',
+      'auth/wrong-password': 'Incorrect password',
+      'auth/email-already-in-use': 'Email already in use',
+      // Add more error mappings as needed
     }
 
-    return true
+    return errorMessages[error.message] || error.message
   }
 
-  const signUp = async (email: string, password: string, metadata?: object) => {
-    setLoading(true)
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: metadata }
-    })
-
-    if (error) {
-      // toast.error(error.message)
-      console.log(error)
-      setLoading(false)
+  const validateSignUp = async (input: SignUpInput) => {
+    try {
+      await SignUpSchema.parseAsync(input)
+      return true
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError(err.errors[0].message)
+      }
       return false
     }
+  }
 
-    return true
+  const validateSignIn = async (input: SignInInput) => {
+    try {
+      await SignInSchema.parseAsync(input)
+      return true
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        setError(err.errors[0].message)
+      }
+      return false
+    }
+  }
+
+  const signIn = async ({ email, password }: SignInInput) => {
+    setError(null)
+    setLoading(true)
+
+    try {
+      if (!await validateSignIn({ email, password })) {
+        return false
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      return true
+    } catch (err) {
+      const errorMessage = handleAuthError(err as AuthError)
+      setError(errorMessage)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const signUp = async ({ email, password, name }: SignUpInput) => {
+    setError(null)
+    setLoading(true)
+
+    try {
+      if (!await validateSignUp({ email, password, name })) {
+        return false
+      }
+
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name }
+        }
+      })
+
+      if (signUpError) throw signUpError
+
+      // Create user profile
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([{ id: session?.user.id, name, email }])
+
+      if (profileError) throw profileError
+
+      return true
+    } catch (err) {
+      const errorMessage = handleAuthError(err as AuthError)
+      setError(errorMessage)
+      return false
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      // toast.error('Đăng xuất thất bại')
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      setSession(null)
+      return true
+    } catch (err) {
+      const errorMessage = handleAuthError(err as AuthError)
+      setError(errorMessage)
       return false
+    } finally {
+      setLoading(false)
     }
-    setSession(null)
-
-    return true
   }
 
-  const updateUserName = async (name: string) => {
+  const updateUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .update({ name })
-        .eq('id', session?.user.id)
-        .single();
+        .select('*')
+        .eq('id', userId)
+        .single()
 
-      if (error) {
-        console.log(error)
-        return false
+      // If user profile doesn't exist, create it
+      if (!data && !error) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([{ id: userId }])
+
+        if (insertError) throw insertError
       }
-      console.log(data)
+    } catch (err) {
+      console.error('Error updating user profile:', err)
+    }
+  }
+
+  const updateUserName = async (name: string) => {
+    setError(null)
+    try {
+      if (!session?.user.id) throw new Error('No user session')
+
+      const { error } = await supabase
+        .from('users')
+        .update({ name })
+        .eq('id', session.user.id)
+
+      if (error) throw error
       return true
-    } catch (error) {
-      console.log(error)
+    } catch (err) {
+      const errorMessage = handleAuthError(err as AuthError)
+      setError(errorMessage)
       return false
     }
   }
 
   const getUserName = async () => {
     try {
+      if (!session?.user.id) return null
+
       const { data, error } = await supabase
         .from('users')
         .select('name')
-        .eq('id', session?.user.id)
-        .single();
+        .eq('id', session.user.id)
+        .single()
 
+      if (error) throw error
       return data?.name
-    } catch (error) {
+    } catch (err) {
+      console.error('Error fetching user name:', err)
       return null
     }
   }
@@ -112,6 +225,7 @@ export function useAuth() {
   return {
     session,
     loading,
+    error,
     signIn,
     signUp,
     signOut,
