@@ -1,33 +1,26 @@
 'use client'
 
 import { z } from 'zod'
-import { useRef, useState, useEffect, use } from 'react'
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { useRef, useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, AlertTriangle, Sparkles, Download, Command, Check } from 'lucide-react'
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from "@/components/ui/badge"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"
-import { useRouter } from 'next/navigation'
-import { promptSchema } from '@/lib/validations/generation'
-import toast from 'react-hot-toast'
-import { generateLogoAction } from '@/app/actions/generation'
-import { fetchGenerationsLeftAction } from '@/app/actions/generation'
-import { downloadLogoAction } from '@/app/actions/download'
+import { ExamplePrompts } from './example-prompts'
+import { PromptInput } from './prompt-input'
+import { StyleSelector } from './style-selector'
+import { GeneratedLogo } from './generated-logo'
+import { NoCreditsAlert } from './no-credits-alert'
+import { GenerationsLeftBadge } from './credits-badge'
+import { getUserAction } from '@/app/actions/session'
+import { fetchGenerationsLeftAction, generateLogoAction } from '@/app/actions/generation'
 import { checkoutAction } from '@/app/actions/checkout'
-import { useAction } from 'next-safe-action/hooks';
-import { getUserAction } from '@/app/actions/session';
-import { type LogoStyle } from '@/types/generation'
-import { logoStyles, loadingMessages, promptExamples } from '@/lib/data/logo'
-
-type PromptFormData = z.infer<typeof promptSchema>;
+import { downloadLogoAction } from '@/app/actions/download'
+import { logoStyles, loadingMessages } from '@/lib/data/logo'
+import { LogoStyle } from '@/types/generation'
+import { promptSchema } from '@/lib/validations/generation'
+import { PromptFormData } from './types'
+import { useAction } from 'next-safe-action/hooks'
+import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 export default function LogoGenerator() {
   const {
@@ -80,7 +73,6 @@ export default function LogoGenerator() {
       toast.error(data.error.serverError || 'Failed to initiate checkout')
     }
   })
-
 
   useEffect(() => {
     fetchGenerationsLeft()
@@ -301,7 +293,7 @@ export default function LogoGenerator() {
       toast.error('Failed to create checkout session. Please try again.');
     }
   }
-
+  
   return (
     <div className="max-w-6xl mx-auto py-12 px-4">
       <div className="grid md:grid-cols-2 gap-8">
@@ -313,110 +305,35 @@ export default function LogoGenerator() {
                 <Skeleton className="h-4 w-1/2" />
               ) : (
                 userResult.data?.user && (
-                  <Badge variant="secondary">
-                    <span className="font-medium">Generations left: {generationsLeftResult.data?.generationsLeft ?? 0}</span>
-                  </Badge>
-                )
+        <GenerationsLeftBadge 
+          generationsLeft={generationsLeftResult.data?.generationsLeft ?? 0} 
+        />
+      )
               )}
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">Example prompts:</label>
-                <div className="flex flex-wrap gap-2">
-                  {promptExamples.map((example, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExampleClick(example)}
-                      className="text-xs"
-                    >
-                      {example.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-                <div className="relative">
-                  <Textarea
-                    name="prompt"
-                    placeholder="Describe your business or logo ideas..."
-                    value={formData.prompt}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    rows={6}
-                    className="w-full resize-none pr-24"
-                  />
-                  <div className="absolute right-3 bottom-3 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Command className="h-3 w-3" />
-                    <span>+ ↵</span>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={isGenerating || rateLimitLeft <= 0 || (userResult.data?.user !== null && (generationsLeftResult.data?.generationsLeft ?? 0) <= 0)}
-                  className="w-full font-semibold">
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Generate Logo
-                    </>
-                  )}
-                </Button>
-              </form>
+              <ExamplePrompts onExampleClick={handleExampleClick} />
+              
+              <PromptInput
+                formData={formData}
+                isGenerating={isGenerating}
+                rateLimitLeft={rateLimitLeft}
+                generationsLeft={generationsLeftResult.data?.generationsLeft}
+                onInputChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onSubmit={handleSubmit}
+              />
 
               {userResult.data?.user && !isGenerating && generationsLeftResult.data?.generationsLeft <= 0 && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Attention</AlertTitle>
-                  <AlertDescription>
-                    You've run out of logo generations. Purchase more to continue creating logos.
-                  </AlertDescription>
-                  <Button onClick={handleBuyCredits} className="mt-2">
-                    Buy More Credits
-                  </Button>
-                </Alert>
+                <NoCreditsAlert onBuyCredits={handleBuyCredits} />
               )}
-              {/* Style Selector */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium">Choose a style:</label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {logoStyles.map((style) => (
-                    <button
-                      key={style.id}
-                      onClick={() => setSelectedStyle(style)}
-                      className={`relative group p-4 rounded-lg border-2 transition-all ${selectedStyle.id === style.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                        }`}
-                    >
-                      <div className="aspect-square mb-2 text-primary">
-                        <img src={style.preview} alt={style.directive} className="object-contain max-w-[50px] max-h-[50px]" />
-                      </div>
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{style.name}</div>
-                        <div className="text-xs text-muted-foreground">{style.description}</div>
-                      </div>
-                      {selectedStyle.id === style.id && (
-                        <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full p-1">
-                          <Check className="h-3 w-3" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
+              <StyleSelector
+                selectedStyle={selectedStyle}
+                onStyleSelect={setSelectedStyle}
+              />
             </div>
           </CardContent>
         </Card>
@@ -426,62 +343,14 @@ export default function LogoGenerator() {
             <CardTitle>Generated Logo</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="aspect-square flex flex-col items-center justify-center bg-muted rounded-lg overflow-hidden relative">
-              {isGenerating ? (
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                  <p className="text-muted-foreground text-lg font-medium animate-pulse">
-                    {loadingMessage}
-                  </p>
-                </div>
-              ) : (generationResult.data?.generationId) ? (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                  <div className="flex-grow flex items-center justify-center p-4">
-                    <img
-                      src={generationResult.data?.generationId ? `/api/logo/${generationResult.data.generationId}` : '/placeholder-image.svg'}
-                      alt="Generated Logo"
-                      width={128}
-                      height={128}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                  <div className="flex flex-row w-full items-center justify-center p-4 bg-background/70 backdrop-blur-sm">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="lg"
-                          variant="default"
-                          className="font-semibold"
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Download
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 transition-all duration-200 ease-in-out">
-                        {isDownloading ? <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer" disabled>
-                          Downloading...
-                        </DropdownMenuItem>
-                          : <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer"
-                            onClick={() => handleDownload(generationResult.data?.generationId || '')}>
-                            Download Preview (Free)
-                          </DropdownMenuItem>
-                        }
-                        <DropdownMenuItem className="py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ease-in-out text-sm font-medium cursor-pointer"
-                          onClick={() => handleDownloadHires(generationResult.data?.generationId || '')}>
-                          {/* Buy Hi-Res ({isPriceLoading ? '...' : `$${hiresPrice}`}) */}
-                          Buy
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-center text-muted-foreground p-4">
-                  <p>Your generated logo will appear here</p>
-                </div>
-              )}
-            </div>
+            <GeneratedLogo
+              isGenerating={isGenerating}
+              isDownloading={isDownloading}
+              generationId={generationResult.data?.generationId}
+              loadingMessage={loadingMessage}
+              onDownload={handleDownload}
+              onDownloadHires={handleDownloadHires}
+            />
           </CardContent>
         </Card>
       </div>

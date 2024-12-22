@@ -4,7 +4,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LogoAIPro - AI-Powered Logo Generator | Create Professional Logos Instantly",
+  title: "LogoAIPro - AI Logo Generator | Create Professional Logos Instantly",
   description: "Transform your brand with LogoAIPro's AI-powered logo generator. Create unique, professional logos in minutes. Perfect for businesses, startups, and personal brands.",
   keywords: "AI logo generator, logo design, artificial intelligence, brand identity, logo maker, professional logos, LogoAIPro",
   authors: [{ name: "LogoAIPro" }],

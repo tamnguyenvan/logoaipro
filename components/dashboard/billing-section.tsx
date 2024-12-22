@@ -1,19 +1,10 @@
 'use client'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { TransactionHistory } from "./transaction-history"
 import { useAction } from "next-safe-action/hooks"
 import { fetchTransactionsAction } from "@/app/actions/transaction"
 import { useEffect } from "react"
+import { TransactionHistory } from "./billing"
 
 const plans = [
   { name: "Basic", price: "$9.99", generations: 100 },

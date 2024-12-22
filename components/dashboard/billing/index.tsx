@@ -56,10 +56,7 @@ export function TransactionHistory() {
     isPending: loading
   } = useAction(fetchTransactionsAction, {
     onSuccess: (data) => {
-      console.log('data', data)
-      console.log('dataaaaaaaaaaaaaaa', transactionsResult.data?.transactions)
       const sortedTransactions = sortTransactions(data.data?.transactions ? data.data.transactions : []);
-      console.log('sortedTransactions', sortedTransactions)
       setTransactions(sortedTransactions);
       setIsRefreshing(false);
     }
@@ -291,5 +288,3 @@ export function TransactionHistory() {
     </Card>
   );
 }
-
-export default TransactionHistory;

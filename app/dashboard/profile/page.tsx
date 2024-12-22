@@ -1,6 +1,6 @@
 export const runtime = "edge";
 
-import { ProfileSection } from "@/components/dashboard/profile-section"
+import { ProfileSection } from "@/components/dashboard/profile"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 

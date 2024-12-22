@@ -23,7 +23,6 @@ export function UsageActivity() {
     hasErrored: hasFetchingActivityError,
   } = useAction(activityAction, {
     onSuccess: (data) => {
-      console.log('data', data)
       setIsRefreshing(false);
     },
     onError: (error) => {

@@ -26,7 +26,7 @@ export const ProfileSection = async () => {
               id="name"
               value={user?.user_metadata.name || ""}
               // value={name}
-              // onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {}}
             />
           </div>
           <div className="space-y-2">

@@ -1,4 +1,4 @@
-import { UsageActivity } from "@/components/dashboard/usage-activity"
+import { UsageActivity } from "@/components/dashboard/activity"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 

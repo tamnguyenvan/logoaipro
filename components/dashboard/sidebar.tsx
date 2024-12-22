@@ -77,8 +77,8 @@ export function Sidebar() {
         {links.map((link) => {
           const isActive = pathname === link.href
           return (
-            <TooltipProvider>
-              <Tooltip key={link.name} delayDuration={0}>
+            <TooltipProvider key={link.name} delayDuration={0}>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     asChild
