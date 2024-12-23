@@ -1,137 +1,72 @@
-'use client'
-
 import Link from "next/link"
-import Image from "next/image"
-import { Facebook, Twitter, Instagram, Linkedin, Youtube } from 'lucide-react'
-import { Badge } from "@/components/ui/badge"
-
-const footerLinks = {
-  followUs: [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Instagram, href: "#", label: "Instagram" },
-    { icon: Twitter, href: "#", label: "Twitter" },
-    { icon: Linkedin, href: "#", label: "LinkedIn" },
-    { icon: Youtube, href: "#", label: "YouTube" }
-  ],
-  freeTools: [
-    { name: "AI Logo Generator", href: "/logo-generator" },
-    { name: "Logo Editor", href: "/logo-editor", isNew: true },
-  ],
-  apps: [
-    { name: "Web Editor", href: "#" },
-    { name: "iPhone app", href: "#" },
-    { name: "Android app", href: "#" },
-    { name: "API (developers)", href: "#" }
-  ],
-  company: [
-    { name: "About us", href: "#" },
-    { name: "Pricing", href: "#" },
-    { name: "Press Kit", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Contact sales", href: "#" }
-  ],
-  legal: [
-    { name: "Help center", href: "#" },
-    { name: "Terms & conditions", href: "#" },
-    { name: "Privacy policy", href: "#" },
-    { name: "Cookie policy", href: "#" }
-  ]
-}
+import { Button } from "@/components/ui/button"
 
 export default function Footer() {
   return (
-    <footer className="bg-primary text-white">
+    <footer className="border-t bg-background">
       <div className="container py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-16">
-          {/* Follow Us */}
-          <div>
-            <h3 className="font-bold mb-6">Follow us</h3>
-            <div className="flex gap-4">
-              {footerLinks.followUs.map((social, index) => (
-                <Link 
-                  key={index} 
-                  href={social.href}
-                  className="hover:opacity-80 transition-opacity"
-                  aria-label={social.label}
-                >
-                  <social.icon className="w-6 h-6" />
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Free Tools */}
-          <div>
-            <h3 className="font-bold mb-6">Free tools</h3>
-            <ul className="space-y-3">
-              {footerLinks.freeTools.map((tool, index) => (
-                <li key={index}>
-                  <Link href={tool.href} className="hover:opacity-80 transition-opacity inline-flex items-center gap-2">
-                    {tool.name}
-                    {tool.isNew && (
-                      <Badge variant="outline" className="text-[10px] h-4 border-white text-white">
-                        New
-                      </Badge>
-                    )}
-                  </Link>
-                </li>
-              ))}
+        <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Product</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link href="/features">Features</Link></li>
+              <li><Link href="/templates">Templates</Link></li>
+              <li><Link href="/pricing">Pricing</Link></li>
+              <li><Link href="/changelog">Changelog</Link></li>
             </ul>
           </div>
-
-          {/* Apps */}
-          <div>
-            <h3 className="font-bold mb-6">Free apps</h3>
-            <ul className="space-y-3">
-              {footerLinks.apps.map((app, index) => (
-                <li key={index}>
-                  <Link href={app.href} className="hover:opacity-80 transition-opacity">
-                    {app.name}
-                  </Link>
-                </li>
-              ))}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Company</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link href="/about">About</Link></li>
+              <li><Link href="/blog">Blog</Link></li>
+              <li><Link href="/careers">Careers</Link></li>
+              <li><Link href="/contact">Contact</Link></li>
             </ul>
           </div>
-
-          {/* Company */}
-          <div>
-            <h3 className="font-bold mb-6">Company</h3>
-            <ul className="space-y-3">
-              {footerLinks.company.map((item, index) => (
-                <li key={index}>
-                  <Link href={item.href} className="hover:opacity-80 transition-opacity">
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Resources</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link href="/docs">Documentation</Link></li>
+              <li><Link href="/help">Help Center</Link></li>
+              <li><Link href="/guides">Guides</Link></li>
+              <li><Link href="/api">API</Link></li>
             </ul>
           </div>
-
-          {/* Help & Legal */}
-          <div>
-            <h3 className="font-bold mb-6">Help & legal</h3>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((item, index) => (
-                <li key={index}>
-                  <Link href={item.href} className="hover:opacity-80 transition-opacity">
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Legal</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              <li><Link href="/privacy">Privacy</Link></li>
+              <li><Link href="/terms">Terms</Link></li>
+              <li><Link href="/license">License</Link></li>
+              <li><Link href="/cookies">Cookie Policy</Link></li>
             </ul>
           </div>
         </div>
-
-        <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/20">
-          <div className="flex items-center gap-2 mb-4 md:mb-0">
-            <Image src="/logo.png" alt="LogoAIPro" width={24} height={24} />
-            <p className="text-sm">© {new Date().getFullYear()} LogoAIPro, Inc.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-              English
-            </button>
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t pt-8 sm:flex-row">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} LogoMakr. All rights reserved.
+          </p>
+          <div className="flex gap-4">
+            <Button variant="ghost" size="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>
+              </svg>
+              <span className="sr-only">Twitter</span>
+            </Button>
+            <Button variant="ghost" size="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                <rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>
+              </svg>
+              <span className="sr-only">LinkedIn</span>
+            </Button>
+            <Button variant="ghost" size="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+              </svg>
+              <span className="sr-only">GitHub</span>
+            </Button>
           </div>
         </div>
       </div>

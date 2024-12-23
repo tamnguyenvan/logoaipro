@@ -59,7 +59,7 @@ export function GeneratedLogo({
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align="center"
-                className="w-64 p-2"
+                className="w-64 p-1"
               >
                 {isDownloading ? (
                   <DropdownMenuItem disabled className="flex items-center justify-center py-3">
@@ -71,24 +71,22 @@ export function GeneratedLogo({
                     className="flex flex-col items-start py-3 cursor-pointer"
                     onClick={() => onDownload(generationId)}
                   >
-                    <span className="font-medium">Preview Quality</span>
-                    <span className="text-xs text-muted-foreground">Free • Web resolution</span>
+                    <span className="font-medium">Preview quality</span>
+                    <span className="text-xs text-muted-foreground">Image 64 x 64 px</span>
                   </DropdownMenuItem>
                 )}
-                
-                <DropdownMenuSeparator />
                 
                 <DropdownMenuItem
                   className="flex flex-col items-start py-3 cursor-pointer"
                   onClick={() => onDownloadHires(generationId)}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">High Resolution</span>
+                    <span className="font-medium">High resolution (HD)</span>
                     <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                      PRO
+                      Paid
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">Perfect for printing & branding</span>
+                  <span className="text-xs text-muted-foreground">Image 2048 x 2048 px</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

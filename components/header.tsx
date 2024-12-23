@@ -4,9 +4,16 @@ import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { AvatarDropdown } from './avatar-dropdown';
-import { ThemeToggle } from './theme-toggle';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet';
+import { AvatarDropdown } from './misc/avatar-dropdown';
+import { ThemeToggle } from './misc/theme-toggle';
 import { useAction } from 'next-safe-action/hooks';
 import { getUserAction } from '@/app/actions/session';
 import { signOutAction } from '@/app/actions/auth';

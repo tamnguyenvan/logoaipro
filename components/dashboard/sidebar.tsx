@@ -21,7 +21,7 @@ import {
   SheetTrigger,
   SheetHeader
 } from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/misc/theme-toggle"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { signOutAction } from "@/app/actions/auth"

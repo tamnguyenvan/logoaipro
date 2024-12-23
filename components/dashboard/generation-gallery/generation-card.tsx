@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, Pencil, Clock, ShoppingCart, MoreVertical, Trash } from 'lucide-react';
-import { PromptDisplay } from "@/components/prompt-display";
+import { PromptDisplay } from "@/components/misc/prompt-display";
 import { motion } from "framer-motion";
 import { useAction } from "next-safe-action/hooks";
 import { downloadLogoAction } from "@/app/actions/download";

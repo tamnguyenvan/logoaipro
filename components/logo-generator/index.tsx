@@ -10,8 +10,12 @@ import { StyleSelector } from './style-selector'
 import { GeneratedLogo } from './generated-logo'
 import { NoCreditsAlert } from './no-credits-alert'
 import { GenerationsLeftBadge } from './credits-badge'
+import { GradientBackground } from '@/components/misc/gradient-background'
 import { getUserAction } from '@/app/actions/session'
-import { fetchGenerationsLeftAction, generateLogoAction } from '@/app/actions/generation'
+import {
+  fetchGenerationsLeftAction,
+  generateLogoAction
+} from '@/app/actions/generation'
 import { checkoutAction } from '@/app/actions/checkout'
 import { downloadLogoAction } from '@/app/actions/download'
 import { logoStyles, loadingMessages } from '@/lib/data/logo'
@@ -293,67 +297,98 @@ export default function LogoGenerator() {
       toast.error('Failed to create checkout session. Please try again.');
     }
   }
-  
+
   return (
-    <div className="max-w-6xl mx-auto py-12 px-4">
-      <div className="grid md:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader className="relative">
-            <CardTitle>Describe Your Logo</CardTitle>
-            <div className="absolute top-4 right-4 flex items-center">
-              {isFetchingGenerationsLeft ? (
-                <Skeleton className="h-4 w-1/2" />
-              ) : (
-                userResult.data?.user && (
-        <GenerationsLeftBadge 
-          generationsLeft={generationsLeftResult.data?.generationsLeft ?? 0} 
-        />
-      )
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col space-y-6">
-              <ExamplePrompts onExampleClick={handleExampleClick} />
-              
-              <PromptInput
-                formData={formData}
+    <GradientBackground
+      from="rgba(255, 255, 255, 0)"
+      to="rgba(219, 234, 254, 0.1)"
+      className="py-12 sm:py-24"
+    >
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Enhanced Title Section */}
+        <div className="text-center mb-12 md:mb-16">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 mb-6 rounded-full bg-primary/10 text-sm font-medium text-primary">
+            Create Your Perfect Logo
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 dark:text-gray-100">
+            <span className="relative cute-underline">
+              AI Logo Generator
+              <span className="absolute -right-12 top-0">✨</span>
+            </span>
+          </h1>
+          <p className="text-xl text-muted-foreground dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
+            Describe your brand and let our AI create a unique logo for you in seconds.
+            <span className="hidden sm:inline"> It's that simple!</span>
+          </p>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+          {/* Left Card */}
+          <Card className="bg-white/50 backdrop-blur-sm border dark:bg-gray-800/50">
+            <CardHeader className="relative">
+              <CardTitle>Describe Your Logo</CardTitle>
+              <div className="absolute top-4 right-4 flex items-center">
+                {isFetchingGenerationsLeft ? (
+                  <Skeleton className="h-4 w-1/2" />
+                ) : (
+                  userResult.data?.user && (
+                    <GenerationsLeftBadge
+                      generationsLeft={generationsLeftResult.data?.generationsLeft ?? 0}
+                    />
+                  )
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col space-y-6">
+                <ExamplePrompts onExampleClick={handleExampleClick} />
+                <PromptInput
+                  formData={formData}
+                  isGenerating={isGenerating}
+                  rateLimitLeft={rateLimitLeft}
+                  generationsLeft={generationsLeftResult.data?.generationsLeft}
+                  onInputChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  onSubmit={handleSubmit}
+                />
+                {userResult.data?.user && !isGenerating && generationsLeftResult.data?.generationsLeft <= 0 && (
+                  <NoCreditsAlert onBuyCredits={handleBuyCredits} />
+                )}
+
+                {/* Divider before StyleSelector */}
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                  </div>
+                </div>
+
+                <StyleSelector
+                  selectedStyle={selectedStyle}
+                  onStyleSelect={setSelectedStyle}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right Card */}
+          <Card className="bg-white/50 backdrop-blur-sm border dark:bg-gray-800/50">
+            <CardHeader>
+              <CardTitle>Generated Logo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <GeneratedLogo
                 isGenerating={isGenerating}
-                rateLimitLeft={rateLimitLeft}
-                generationsLeft={generationsLeftResult.data?.generationsLeft}
-                onInputChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onSubmit={handleSubmit}
+                isDownloading={isDownloading}
+                generationId={generationResult.data?.generationId}
+                loadingMessage={loadingMessage}
+                onDownload={handleDownload}
+                onDownloadHires={handleDownloadHires}
               />
-
-              {userResult.data?.user && !isGenerating && generationsLeftResult.data?.generationsLeft <= 0 && (
-                <NoCreditsAlert onBuyCredits={handleBuyCredits} />
-              )}
-
-              <StyleSelector
-                selectedStyle={selectedStyle}
-                onStyleSelect={setSelectedStyle}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Generated Logo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <GeneratedLogo
-              isGenerating={isGenerating}
-              isDownloading={isDownloading}
-              generationId={generationResult.data?.generationId}
-              loadingMessage={loadingMessage}
-              onDownload={handleDownload}
-              onDownloadHires={handleDownloadHires}
-            />
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </GradientBackground>
   )
 }
